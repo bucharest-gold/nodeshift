@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [8.3.1](https://www.github.com/nodeshift/nodeshift/compare/v8.3.0...v8.3.1) (2021-07-19)
+
+
+### Bug Fixes
+
+* upgrade documentation from 13.1.1 to 13.2.5 ([#571](https://www.github.com/nodeshift/nodeshift/issues/571)) ([5d4b5d6](https://www.github.com/nodeshift/nodeshift/commit/5d4b5d69cd22fdf35bd84ce833032bc1dced4b03))
+
 ## [8.3.0](https://www.github.com/nodeshift/nodeshift/compare/v8.2.1...v8.3.0) (2021-07-17)
 
 
