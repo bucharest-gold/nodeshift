@@ -1,0 +1,2799 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset='utf-8'>
+  <title>nodeshift 8.3.0 | Documentation</title>
+  <meta name='description' content='Plugin for running openshift deployments'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <link href='assets/bass.css' rel='stylesheet'>
+  <link href='assets/style.css' rel='stylesheet'>
+  <link href='assets/github.css' rel='stylesheet'>
+  <link href='assets/split.css' rel='stylesheet'>
+</head>
+<body class='documentation m0'>
+    <div class='flex'>
+      <div id='split-left' class='overflow-auto fs0 height-viewport-100'>
+        <div class='py1 px2'>
+          <h3 class='mb0 no-anchor'>nodeshift</h3>
+          <div class='mb1'><code>8.3.0</code></div>
+          <input
+            placeholder='Filter'
+            id='filter-input'
+            class='col12 block input'
+            spellcheck='false'
+            autocapitalize='off'
+            autocorrect='off'
+            type='text' />
+          <div id='toc'>
+            <ul class='list-reset h5 py1-ul'>
+              
+                
+                <li><a
+                  href='#readme'
+                  class="h5 bold black caps">
+                  README
+                  
+                </a>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#login'
+                  class="">
+                  login
+                  
+                </a>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#logout'
+                  class="">
+                  logout
+                  
+                </a>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#getnodeshiftconfig'
+                  class="">
+                  getNodeshiftConfig
+                  
+                </a>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#deploy'
+                  class="">
+                  deploy
+                  
+                </a>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#resource'
+                  class="">
+                  resource
+                  
+                </a>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#applyresource'
+                  class="">
+                  applyResource
+                  
+                </a>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#undeploy'
+                  class="">
+                  undeploy
+                  
+                </a>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#build'
+                  class="">
+                  build
+                  
+                </a>
+                
+                </li>
+              
+            </ul>
+          </div>
+          <div class='mt1 h6 quiet'>
+            <a href='https://documentation.js.org/reading-documentation.html'>Need help reading this?</a>
+          </div>
+        </div>
+      </div>
+      <div id='split-right' class='relative overflow-auto height-viewport-100'>
+        
+          
+            <div class='keyline-top-not py2'><section class='py2 clearfix'>
+
+  <h2 id='readme' class='mt0'>
+    README
+  </h2>
+
+  
+    <h1>Nodeshift</h1>
+<p><img src="https://github.com/nodeshift/nodeshift/workflows/Node.js%20CI/badge.svg" alt="Node.js CI">
+<a href="https://coveralls.io/github/nodeshift/nodeshift?branch=main"><img src="https://coveralls.io/repos/github/nodeshift/nodeshift/badge.svg?branch=main" alt="Coverage Status"></a></p>
+<h2>What is it</h2>
+<p>Nodeshift is an opinionated command line application and programmable API that you can use to deploy Node.js projects to OpenShift and Kubernetes(minikube).</p>
+<h2>Prerequisites</h2>
+<ul>
+<li>Node.js - version 12.x or greater</li>
+</ul>
+<h2>Install</h2>
+<p>To install globally: <code>npm install -g nodeshift</code></p>
+<p>Use with npx: <code>npx nodeshift</code></p>
+<p>or to use in an npm script</p>
+<pre><code>npm install --save-dev nodeshift
+
+// inside package.json
+scripts: {
+  nodeshift: nodeshift
+}
+
+$ npm run nodeshift
+</code></pre>
+<h2>Core Concepts</h2>
+<h3>Commands &#x26; Goals</h3>
+<p>By default, if you run just <code>nodeshift</code>, it will run the <code>deploy</code> goal, which is a shortcut for running <code>resource</code>, <code>build</code> and <code>apply-resource</code>.</p>
+<p><strong>login</strong> - will login to the cluster</p>
+<p><strong>logout</strong> - will logout of the cluster</p>
+<p><strong>resource</strong> - will parse and create the application resources files on disk</p>
+<p><strong>apply-resource</strong> - does the resource goal and then deploys the resources to your running cluster</p>
+<p><strong>build</strong> - archives the code, creates a build config and imagestream and pushes the binary to the cluster</p>
+<p><strong>deploy</strong> -  a shortcut for running <code>resource</code>, <code>build</code> and <code>apply-resource</code></p>
+<p><strong>undeploy</strong> - removes resources that were deployed with the apply-resource command</p>
+<h3>Using Login and Logout</h3>
+<p>By default, the Nodeshift CLI will look for a kube config in <code>~/.kube/config</code>.  This is usually created when a user does an <code>oc login</code>,  but that requires the <code>oc</code> to be installed and the extra step of running the <code>oc login</code> command.  The Nodeshift CLI allows you to pass a username/password or a valid auth token along with the clusters API server address to authenticate requests without the need to run <code>oc login</code> first.</p>
+<p>While these parameters can be specified for each command, the <code>nodeshift login</code> command helps to simplify that.  You can now run <code>nodeshift login</code> with the parameters mentioned to first login, then run the usual <code>nodeshift deploy</code> without neededing to add the flags.</p>
+<p>CLI Usage - Login:</p>
+<pre><code>$ nodeshift login --username=developer --password=password --server=https://api.server
+
+or
+
+$ nodeshift login --token=12345 --server=https://api.server
+</code></pre>
+<p>CLI Usage - Logout</p>
+<pre><code>$ nodeshift logout
+</code></pre>
+<p>API usage using async/await would look something like this:</p>
+<pre><code>const nodeshift = require('nodeshift');
+
+const options = {
+  username: 'kubeadmin',
+  password: '...',
+  server: '...',
+  insecure: true
+};
+
+(async () => {
+  await nodeshift.login(options);
+  await nodeshift.deploy();
+  await nodeshift.logout();
+})();
+</code></pre>
+<h3><code>.nodeshift</code> Directory</h3>
+<p>The <code>.nodeshift</code> directory contains your resource fragments.  These are <code>.yml</code> files that describe your services, deployments, routes, etc.  By default, nodeshift will create a <code>Service</code> and <code>DeploymentConfig</code> in memory, if none are provided.  A <code>Route</code> resource fragment should be provided or use the <code>expose</code> flag if you want to expose your application to the outside world.</p>
+<p>For kubernetes based deployments,  a <code>Service</code> and <code>Deployment</code> will be created by default, if none are provided.  The <code>Service</code> is of a <code>LoadBalancer</code> type, so no <code>Ingress</code> is needed to expose the application.</p>
+<h3>Resource Fragments</h3>
+<p>OpenShift resource fragments are user provided YAML files which describe and enhance your deployed resources.  They are enriched with metadata, labels and more by nodeshift.</p>
+<p>Each resource gets its own file, which contains some skeleton of a resource description. Nodeshift will enrich it and then combine all the resources into a single openshift.yml and openshift.json(located in ./tmp/nodeshift/resource/).</p>
+<p>The resource object's <code>Kind</code>, if not given, will be extracted from the filename.</p>
+<h3>Enrichers</h3>
+<p>Enrichers will add things to the resource fragments, like missing metadata and labels.  If your project uses git, then annotations with the git branch and commit hash will be added to the metadata.</p>
+<p>Default Enrichers will also create a default Service and DeploymentConfig when none are provided.</p>
+<p>The default port value is 8080, but that can be overridden with the <code>--deploy.port</code> flag.</p>
+<p>You can also override this value by providing a .nodeshift/deployment.yaml resource file</p>
+<h4>Resource Fragment Parameters</h4>
+<p>Some Resource Fragments might need to have a value set at "run time".  For example, in the fragment below, we have the <code>${SSO_AUTH_SERVER_URL}</code> parameter:</p>
+<pre><code>    apiVersion: v1
+    kind: Deployment
+    metadata:
+        name: nodejs-rest-http-secured
+    spec:
+      template:
+        spec:
+          containers:
+            - env:
+              - name: SSO_AUTH_SERVER_URL
+                value: "${SSO_AUTH_SERVER_URL}"
+              - name: REALM
+                value: master
+</code></pre>
+<p>To set that using nodeshift, use the <code>-d</code> option with a KEY=VALUE, like this:</p>
+<pre><code>nodeshift -d SSO_AUTH_SERVER_URL=https://sercure-url
+</code></pre>
+<!-- For more on writing openshift templates, [see here](https://docs.openshift.org/latest/dev_guide/templates.html#writing-templates) -->
+<h3>Project Archive</h3>
+<p>A user can specify exactly what files would like nodeshift to include to the archive it will generate by using the files property in package.json.</p>
+<p>If a user does not use the files property in the package.json to filter what files they would like to include, then nodeshift by default will include everything except the <strong>node_modules</strong>, <strong>.git</strong> and <strong>tmp</strong> directories.</p>
+<p>Nodeshift will also look for additional exclusion rules at a .gitignore file if there is one. Same thing with a .dockerignore file.</p>
+<p>If both ignore files are present,  nodeshift will union them together and use that.</p>
+<h3>API</h3>
+<p>Along with the command line, there is also a public API.  The API mirrors the commands.</p>
+<p>API Docs - <a href="https://nodeshift.github.io/nodeshift/">https://nodeshift.github.io/nodeshift/</a></p>
+<ul>
+<li>
+<p>resource</p>
+</li>
+<li>
+<p>applyResource</p>
+</li>
+<li>
+<p>build</p>
+</li>
+<li>
+<p>deploy</p>
+</li>
+<li>
+<p>undeploy</p>
+</li>
+</ul>
+<p>Options that you can specify on the command line, can also be passed as an options object to the API</p>
+<p>All methods are Promise based and will return a JSON object with information about each goal that is run.</p>
+<p>For example, if the <code>deploy</code> method was run, it would return something similar:</p>
+<pre><code>{
+    build: {
+        ... // build information
+    },
+    resources: [
+        ... // resources created
+    ],
+    appliedResources: [
+        ... // resources that were applied to the running cluster
+    ]
+}
+</code></pre>
+<h4>Example Usage</h4>
+<pre class='hljs'><span class="hljs-keyword">const</span> nodeshift = <span class="hljs-built_in">require</span>(<span class="hljs-string">&#x27;nodeshift&#x27;</span>);
+
+<span class="hljs-comment">// Deploy an Application</span>
+nodeshift.deploy().then(<span class="hljs-function">(<span class="hljs-params">response</span>) =&gt;</span> {
+    <span class="hljs-built_in">console</span>.log(response);
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&#x27;Application Deployed&#x27;</span>)
+}).catch(<span class="hljs-function">(<span class="hljs-params">err</span>) =&gt;</span> {
+    <span class="hljs-built_in">console</span>.log(err);
+})</pre>
+<p><em>please note: Currently, once a route, service, deployment config, build config, and imagestream config are created, those are re-used. The only thing that changes from deployment to deployment is the source code.  For application resources, you can update them by undeploying and then deploying again.  BuildConfigs and Imagestreams can be re-created using the --build.recreate flag</em></p>
+<h4>Using with Kubernetes</h4>
+<p>Nodeshift can deploy Node.js applications to a Kubernetes Cluster using the <code>--kube</code> flag.  At the moment, there is only support for <a href="https://minikube.sigs.k8s.io/docs/start/">minikube</a>.</p>
+<p>Nodeshift expects that your code has a Dockerfile in its root directory.  Then deploying to Minikube is as easy as running:</p>
+<p><code>npx nodeshift --kube</code></p>
+<p>This connect to Minikubes docker server, create a new container and then deploy and expose that container with a <code>Deployment</code> and <code>Service</code></p>
+<h4>Openshift Rest Client Configuration</h4>
+<p>Nodeshift uses the <a href="https://github.com/nodeshift/openshift-rest-client">Openshift Rest Client</a> under the hood to make all REST calls to the cluster.  By default, the rest client will look at your <code>~/.kube/config</code> file to authenticate you.  This file will be created when you do an <code>oc login</code>.</p>
+<p>If you don't want to use <code>oc</code> to login first, you can pass in a username, password, and the server of the cluster to authenticate against.  If you are using a cluster with a self-signed certificate(like code ready containers), then you will need to add the <code>insecure</code> flag.</p>
+<p>Also note, that when accessing the cluster this way,  the namespace will default to <code>default</code>.  If you need to target another namespace,  use the <code>namespace.name</code> flag.  Just make sure the user you use has the appropriate permissions.</p>
+<p>An example of this might look something like this:</p>
+<p><code>npx nodeshift --username developer --password developer --server https://apiserver_for_cluster --insecure --namespace.name nodejs-examples</code></p>
+<p>You can also pass in a valid auth token using the <code>token</code> flag.  If both a token and username/password is specified,  the token will take the preference.</p>
+<p><code>npx nodeshift --token 123456789 --server https://apiserver_for_cluster --insecure --namespace.name nodejs-examples</code></p>
+<h2>Advanced Options</h2>
+<p>While nodeshift is very opinionated about deployment parameters, both the CLI and the API accept options that allow you to customize nodeshift's behavior.</p>
+<h4>version</h4>
+<p>Outputs the current version of nodeshift</p>
+<h4>projectLocation</h4>
+<p>Changes the default location of where to look for your project. Defaults to your current working directory(CWD)</p>
+<h4>configLocation</h4>
+<p>This option is passed through to the <a href="https://www.npmjs.com/package/openshift-rest-client">Openshift Rest Client</a>.  Defaults to the <code>~/.kube/config</code></p>
+<h4>token</h4>
+<p>Auth token to pass into the openshift rest client for logging in with the API Server.  Overrides the username/password</p>
+<h4>username</h4>
+<p>username to pass into the openshift rest client for logging in with the API Server.</p>
+<h4>password</h4>
+<p>password to pass into the openshift rest client for logging in with the API Server.</p>
+<h4>server</h4>
+<p>server to pass into the openshift rest client for logging in with the API Server.</p>
+<h4>apiServer - Deprecated</h4>
+<p>Use server instead. apiServer to pass into the openshift rest client for logging in with the API Server.</p>
+<h4>insecure</h4>
+<p>flag to pass into the openshift rest client for logging in with a self signed cert.  Only used with apiServer login.  default to false.</p>
+<h4>forceLogin</h4>
+<p>Force a login when using the apiServer login.  Only used with apiServer login.  default to false</p>
+<h4>imageTag</h4>
+<p>Specify the tag of the docker image to use for the deployed application. defaults to latest.
+These version tags correspond to the RHSCL tags of the <a href="https://access.redhat.com/containers/#/registry.access.redhat.com/ubi8/nodejs-14">ubi8/nodejs s2i images</a></p>
+<h4>dockerImage</h4>
+<p>Specify the s2i builder image of Node.js to use for the deployed applications.  Defaults to <a href="https://access.redhat.com/containers/#/registry.access.redhat.com/ubi8/nodejs-14">ubi8/nodejs s2i images</a></p>
+<h4>web-app</h4>
+<p>Flag to automatically set the appropriate docker image for web app deployment. Defaults to false</p>
+<h4>resourceProfile</h4>
+<p>Define a subdirectory below .nodeshift/ that indicates where OpenShift resources are stored</p>
+<h4>outputImageStream</h4>
+<p>The name of the ImageStream to output to.  Defaults to project name from package.json</p>
+<h4>outputImageStreamTag</h4>
+<p>The tag of the ImageStream to output to. Defaults to latest</p>
+<h4>quiet</h4>
+<p>suppress INFO and TRACE lines from output logs.</p>
+<h4>expose</h4>
+<p>options to create a default route, if non is provided.  Defaults to false</p>
+<h4>removeAll</h4>
+<p>option to remove builds, buildConfigs and Imagestreams.  Defaults to false - <strong>Only for the <code>undeploy</code> Command</strong></p>
+<h4>deploy.port</h4>
+<p>Flag to update the default ports on the resource files. Defaults to 8080</p>
+<h4>deploy.env</h4>
+<p>Flag to pass deployment config environment variables as NAME=Value.  Can be used multiple times.  ex: <code>nodeshift --deploy.env NODE_ENV=development --deploy.env YARN_ENABLED=true</code></p>
+<h4>build.recreate</h4>
+<p>Flag to recreate a BuildConfig or Imagestream.  Defaults to false. Choices are "buildConfig", "imageStream", false, true.  If true, both are re-created</p>
+<h4>build.forcePull</h4>
+<p>Flag to make your BuildConfig always pull a new image from dockerhub.  Defaults to false</p>
+<h4>build.incremental</h4>
+<p>Flag to perform incremental builds(if applicable), which means it reuses artifacts from previously-built images. Defaults to false</p>
+<h4>build.env</h4>
+<p>Flag to pass build config environment variables as NAME=Value.  Can be used multiple times.  ex: <code>nodeshift --build.env NODE_ENV=development --build.env YARN_ENABLED=true</code></p>
+<h4>build.strategy</h4>
+<p>Flag to change the build strategy used.  Values can be Docker or Source.  Defaults to Source</p>
+<h4>useDeployment</h4>
+<p>Flag to deploy the application using a Deployment instead of a DeploymentConfig. Defaults to false</p>
+<h4>knative</h4>
+<p>EXPERIMENTAL. Flag to deploy an application as a Knative Serving Service.  Defaults to false
+Since this feature is experimental,  it is subject to change without a Major version release until it is fully stable.</p>
+<h4>kube</h4>
+<p>Flag to deploy an application to a vanilla kubernetes cluster.  At the moment only Minikube is supported.</p>
+<h4>rh-metering</h4>
+<p>Flag to add some metering labels to a deployment.  To change the nodeVersion label, use <code>--rh-metering.nodeVersion</code> flag.  Intended for use with Red Hat product images.  For more information on metering for Red Hat images, see <a href="https://access.redhat.com/documentation/en-us/red_hat_build_of_node.js/14/html/release_notes_for_node.js_14/features-nodejs#node_js_metering_labels_for_openshift">here</a></p>
+<h4>help</h4>
+<p>Shows the below help</p>
+<pre><code>    Usage: nodeshift [--options]
+
+    Commands:
+        nodeshift deploy          default command - deploy                   [default]
+        nodeshift build           build command
+        nodeshift resource        resource command
+        nodeshift apply-resource  apply resource command
+        nodeshift undeploy        undeploy resources
+        nodeshift login           login to the cluster
+        nodeshift logout          logout of the cluster
+
+    Options:
+        --version                Show version number                         [boolean]
+        --projectLocation        change the default location of the project   [string]
+        --kube                   Flag to deploy an application to a vanilla kubernetes
+                       cluster.  At the moment only Minikube is supported.
+                                                                             [boolean]
+        --configLocation         change the default location of the config    [string]
+        --token                  auth token to pass into the openshift rest client for
+                                 logging in.  Overrides the username/password [string]
+        --username               username to pass into the openshift rest client for
+                                 logging in                                   [string]
+        --password               password to pass into the openshift rest client for
+                                 logging in                                   [string]
+        --apiServer              Deprecated - use the "server" flag instead. server address to pass into the openshift rest client
+                                 for logging in                               [string]
+        --server                 server address to pass into the openshift rest client
+                                 for logging in                               [string]
+        --insecure               flag to pass into the openshift rest client for
+                                 logging in with a self signed cert.  Only used with
+                                 apiServer login                             [boolean]
+        --forceLogin             Force a login when using the apiServer login[boolean]
+        --imageTag           The tag of the docker image to use for the deployed
+                            application.                 [string] [default: "latest"]
+        --web-app                flag to automatically set the appropriate docker image
+                                 for web app deployment
+                                                         [boolean] [default: false]
+        --resourceProfile        Define a subdirectory below .nodeshift/ that indicates
+                                 where Openshift resources are stored         [string]
+        --outputImageStream      The name of the ImageStream to output to.  Defaults
+                       to project name from package.json            [string]
+        --outputImageStreamTag   The tag of the ImageStream to output to.    [string]
+        --quiet                  suppress INFO and TRACE lines from output logs
+                                                                            [boolean]
+        --expose            flag to create a default Route and expose the default
+                   service [boolean] [choices: true, false] [default: false]
+        --namespace.displayName  flag to specify the project namespace display name to
+                       build/deploy into.  Overwrites any namespace settings
+                       in your OpenShift or Kubernetes configuration files
+                                                                    [string]
+        --namespace.create       flag to create the namespace if it does not exist.
+                       Only applicable for the build and deploy command.
+                       Must be used with namespace.name            [boolean]
+        --namespace.remove       flag to remove the user created namespace.  Only
+                       applicable for the undeploy command.  Must be used
+                       with namespace.name                         [boolean]
+        --namespace.name         flag to specify the project namespace name to
+                       build/deploy into.  Overwrites any namespace settings
+                       in your OpenShift or Kubernetes configuration files
+                                                                    [string]
+        --deploy.port        flag to update the default ports on the resource files.
+                   Defaults to 8080                          [default: 8080]
+        --build.recreate         flag to recreate a buildConfig or Imagestream
+                [choices: "buildConfig", "imageStream", false, true] [default: false]
+        --build.forcePull        flag to make your BuildConfig always pull a new image
+                                from dockerhub or not
+                                    [boolean] [choices: true, false] [default: false]
+        --build.incremental  flag to perform incremental builds, which means it reuses
+                                artifacts from previously-built images
+                                    [boolean] [choices: true, false] [default: false]
+        --build.strategy         flag to change the build strategy.  Defaults to Source
+                                  [choices: "Source", "Docker"]
+        --metadata.out           determines what should be done with the response
+                                metadata from OpenShift
+                [string] [choices: "stdout", "ignore", "&#x3C;filename>"] [default: "ignore"]
+        --useDeployment          flag to deploy the application using a Deployment
+                       instead of a DeploymentConfig
+                           [boolean] [choices: true, false] [default: false]
+        --knative                EXPERIMENTAL. flag to deploy an application
+                       as a Knative Serving Service
+                           [boolean] [choices: true, false] [default: false]
+        --help                   Show help                                   [boolean]
+        --cmd                                                      [default: "deploy"]
+</code></pre>
+<h2>Contributing</h2>
+<p>Please read the <a href="./CONTRIBUTING.md">contributing guide</a></p>
+
+  
+</section></div>
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='login'>
+      login
+    </h3>
+    
+    
+  </div>
+  
+
+  <p>The login function will login</p>
+
+    <div class='pre p1 fill-light mt0'>login(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?
+            = <code>{}</code>)</code>
+	    Options object for the deploy function
+
+          </div>
+          
+          <table class='mt1 mb2 fixed-table h5 col-12'>
+            <colgroup>
+              <col width='30%' />
+              <col width='70%' />
+            </colgroup>
+            <thead>
+              <tr class='bold fill-light'>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody class='mt1'>
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.projectLocation</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the location(directory) of your projects package.json. Defaults to 
+<code>process.cwd</code>
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.token</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>auth token to pass into the openshift rest client for logging in with the API Server.  Overrides the username/password
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.username</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>username to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.password</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>password to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.apiServer</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>@deprecated - use server instead. apiServer to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.server</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>server to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.insecure</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to pass into the openshift rest client for logging in with a self signed cert.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.forceLogin</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Force a login when using the apiServer login.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+            </tbody>
+          </table>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></code>:
+        Returns a JSON Object
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='logout'>
+      logout
+    </h3>
+    
+    
+  </div>
+  
+
+  <p>The login function will login</p>
+
+    <div class='pre p1 fill-light mt0'>logout(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?)</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?
+            = <code>{}</code>)</code>
+	    Options object for the deploy function
+
+          </div>
+          
+          <table class='mt1 mb2 fixed-table h5 col-12'>
+            <colgroup>
+              <col width='30%' />
+              <col width='70%' />
+            </colgroup>
+            <thead>
+              <tr class='bold fill-light'>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody class='mt1'>
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.projectLocation</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the location(directory) of your projects package.json. Defaults to 
+<code>process.cwd</code>
+</span></td>
+</tr>
+
+
+              
+            </tbody>
+          </table>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='getnodeshiftconfig'>
+      getNodeshiftConfig
+    </h3>
+    
+    
+  </div>
+  
+
+  <p>The getNodeshiftConfig function will return the config</p>
+
+    <div class='pre p1 fill-light mt0'>getNodeshiftConfig(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?
+            = <code>{}</code>)</code>
+	    Options object for the deploy function
+
+          </div>
+          
+          <table class='mt1 mb2 fixed-table h5 col-12'>
+            <colgroup>
+              <col width='30%' />
+              <col width='70%' />
+            </colgroup>
+            <thead>
+              <tr class='bold fill-light'>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody class='mt1'>
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.projectLocation</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the location(directory) of your projects package.json. Defaults to 
+<code>process.cwd</code>
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.token</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>auth token to pass into the openshift rest client for logging in with the API Server.  Overrides the username/password
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.username</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>username to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.password</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>password to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.apiServer</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>@deprecated - use server instead. apiServer to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.server</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>server to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.insecure</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to pass into the openshift rest client for logging in with a self signed cert.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.forceLogin</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Force a login when using the apiServer login.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.expose</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Set to true to create a default Route and expose the default service.  defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.exposeHost</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Alias/DNS that points to the service. Must be used with expose
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.namespace</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.displayName</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to specify the project namespace display name to build/deploy into.  Overwrites any namespace settings in your OpenShift or Kubernetes configuration files
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.create</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to create the namespace if it does not exist. Only applicable for the build and deploy command. Must be used with namespace.name
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.name</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to specify the project namespace name to build/deploy into.  Overwrites any namespace settings in your OpenShift or Kubernetes configuration files
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.resourceProfile</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Define a subdirectory below .nodeshift/ that indicates where Openshift resources are stored
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.imageTag</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>set the version to use for the ubi8/nodejs-14.  Versions are ubi8/nodejs-14 tags: 
+<a href="https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/nodejs-14">https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/nodejs-14</a>
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.outputImageStream</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the name of the ImageStream to output to.  Defaults to project name from package.json
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.outputImageTag</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>The tag of the ImageStream to output to. Defaults to latest
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.quiet</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>suppress INFO and TRACE lines from output logs
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.deploy</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.deploy.port</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to update the default ports on the resource files. Defaults to 8080
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.deploy.env</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>?</code>
+  </td>
+  <td class='break-word'><span>an array of objects to pass deployment config environment variables.  
+[{name: NAME_PROP, value: VALUE}]
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.build</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.strategy</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to change the build strategy used.  Values can be Docker or Source.  Defaults to Source
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.recreate</span> <code class='quiet'>string/boolean?</code>
+  </td>
+  <td class='break-word'><span>flag to recreate a buildConfig or Imagestream. values are "buildConfig", "imageStream", true, false.  Defaults to false
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.forcePull</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to make your BuildConfig always pull a new image from dockerhub or not. Defaults to false
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.env</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>?</code>
+  </td>
+  <td class='break-word'><span>an array of objects to pass build config environment variables.  
+[{name: NAME_PROP, value: VALUE}]
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.definedProperties</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">array</a>?</code>
+  </td>
+  <td class='break-word'><span>Array of objects with the format { key: value }.  Used for template substitution
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.useDeployment</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Flag to deploy the application using a Deployment instead of a DeploymentConfig. Defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.knative</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>EXPERIMENTAL. flag to deploy an application as a Knative Serving Service.  Defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.kube</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Flag to deploy an application to a vanilla kubernetes cluster.  At the moment only Minikube is supported.  Defaults to false
+</span></td>
+</tr>
+
+
+              
+            </tbody>
+          </table>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></code>:
+        Returns a JSON Object
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='deploy'>
+      deploy
+    </h3>
+    
+    
+  </div>
+  
+
+  <p>The deploy function will do the combination of resource, build and apply-resource</p>
+
+    <div class='pre p1 fill-light mt0'>deploy(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?
+            = <code>{}</code>)</code>
+	    Options object for the deploy function
+
+          </div>
+          
+          <table class='mt1 mb2 fixed-table h5 col-12'>
+            <colgroup>
+              <col width='30%' />
+              <col width='70%' />
+            </colgroup>
+            <thead>
+              <tr class='bold fill-light'>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody class='mt1'>
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.projectLocation</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the location(directory) of your projects package.json. Defaults to 
+<code>process.cwd</code>
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.token</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>auth token to pass into the openshift rest client for logging in with the API Server.  Overrides the username/password
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.username</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>username to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.password</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>password to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.apiServer</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>@deprecated - use server instead. apiServer to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.server</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>server to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.insecure</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to pass into the openshift rest client for logging in with a self signed cert.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.forceLogin</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Force a login when using the apiServer login.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.expose</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Set to true to create a default Route and expose the default service.  defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.exposeHost</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Alias/DNS that points to the service. Must be used with expose
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.namespace</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.displayName</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to specify the project namespace display name to build/deploy into.  Overwrites any namespace settings in your OpenShift or Kubernetes configuration files
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.create</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to create the namespace if it does not exist. Only applicable for the build and deploy command. Must be used with namespace.name
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.name</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to specify the project namespace name to build/deploy into.  Overwrites any namespace settings in your OpenShift or Kubernetes configuration files
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.resourceProfile</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Define a subdirectory below .nodeshift/ that indicates where Openshift resources are stored
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.imageTag</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>set the version to use for the ubi8/nodejs-14.  Versions are ubi8/nodejs-14 tags: 
+<a href="https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/nodejs-14">https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/nodejs-14</a>
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.outputImageStream</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the name of the ImageStream to output to.  Defaults to project name from package.json
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.outputImageTag</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>The tag of the ImageStream to output to. Defaults to latest
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.quiet</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>suppress INFO and TRACE lines from output logs
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.deploy</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.deploy.port</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to update the default ports on the resource files. Defaults to 8080
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.deploy.env</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>?</code>
+  </td>
+  <td class='break-word'><span>an array of objects to pass deployment config environment variables.  
+[{name: NAME_PROP, value: VALUE}]
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.build</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.strategy</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to change the build strategy used.  Values can be Docker or Source.  Defaults to Source
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.recreate</span> <code class='quiet'>string/boolean?</code>
+  </td>
+  <td class='break-word'><span>flag to recreate a buildConfig or Imagestream. values are "buildConfig", "imageStream", true, false.  Defaults to false
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.forcePull</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to make your BuildConfig always pull a new image from dockerhub or not. Defaults to false
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.env</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>?</code>
+  </td>
+  <td class='break-word'><span>an array of objects to pass build config environment variables.  
+[{name: NAME_PROP, value: VALUE}]
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.definedProperties</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">array</a>?</code>
+  </td>
+  <td class='break-word'><span>Array of objects with the format { key: value }.  Used for template substitution
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.useDeployment</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Flag to deploy the application using a Deployment instead of a DeploymentConfig. Defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.knative</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>EXPERIMENTAL. flag to deploy an application as a Knative Serving Service.  Defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.kube</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Flag to deploy an application to a vanilla kubernetes cluster.  At the moment only Minikube is supported.  Defaults to false
+</span></td>
+</tr>
+
+
+              
+            </tbody>
+          </table>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></code>:
+        Returns a JSON Object
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='resource'>
+      resource
+    </h3>
+    
+    
+  </div>
+  
+
+  <p>The resource function will find and enrich all the resource fragments from the .nodeshift directory and create missing service and deployment configs.
+An openshift.yaml and openshift.json will also be created in the ./tmp/nodeshift/resource directory</p>
+
+    <div class='pre p1 fill-light mt0'>resource(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?
+            = <code>{}</code>)</code>
+	    Options object for the resource function
+
+          </div>
+          
+          <table class='mt1 mb2 fixed-table h5 col-12'>
+            <colgroup>
+              <col width='30%' />
+              <col width='70%' />
+            </colgroup>
+            <thead>
+              <tr class='bold fill-light'>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody class='mt1'>
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.projectLocation</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the location(directory) of your projects package.json. Defaults to 
+<code>process.cwd</code>
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.token</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>auth token to pass into the openshift rest client for logging in with the API Server.  Overrides the username/password
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.username</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>username to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.password</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>password to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.apiServer</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>@deprecated - use server instead. apiServer to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.server</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>server to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.insecure</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to pass into the openshift rest client for logging in with a self signed cert.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.forceLogin</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Force a login when using the apiServer login.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.expose</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Set to true to create a default Route and expose the default service.  defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.exposeHost</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Alias/DNS that points to the service. Must be used with expose
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.namespace</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.displayName</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to specify the project namespace display name to build/deploy into.  Overwrites any namespace settings in your OpenShift or Kubernetes configuration files
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.name</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to specify the project namespace name to build/deploy into.  Overwrites any namespace settings in your OpenShift or Kubernetes configuration files
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.resourceProfile</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Define a subdirectory below .nodeshift/ that indicates where Openshift resources are stored
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.imageTag</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>set the version to use for the ubi8/nodejs-14.  Versions are ubi8/nodejs-14 tags: 
+<a href="https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/nodejs-14">https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/nodejs-14</a>
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.outputImageStream</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the name of the ImageStream to output to.  Defaults to project name from package.json
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.outputImageTag</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>The tag of the ImageStream to output to. Defaults to latest
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.quiet</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>suppress INFO and TRACE lines from output logs
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.build</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.recreate</span> <code class='quiet'>string/boolean?</code>
+  </td>
+  <td class='break-word'><span>flag to recreate a buildConfig or Imagestream. values are "buildConfig", "imageStream", true, false.  Defaults to false
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.forcePull</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to make your BuildConfig always pull a new image from dockerhub or not. Defaults to false
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.definedProperties</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">array</a>?</code>
+  </td>
+  <td class='break-word'><span>Array of objects with the format { key: value }.  Used for template substitution
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.useDeployment</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Flag to deploy the application using a Deployment instead of a DeploymentConfig. Defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.knative</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>EXPERIMENTAL. flag to deploy an application as a Knative Serving Service.  Defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.kube</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Flag to deploy an application to a vanilla kubernetes cluster.  At the moment only Minikube is supported.  Defaults to false
+</span></td>
+</tr>
+
+
+              
+            </tbody>
+          </table>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></code>:
+        Returns a JSON Object
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='applyresource'>
+      applyResource
+    </h3>
+    
+    
+  </div>
+  
+
+  <p>The apply-resource function does what resource does, but also pushes those resource fragments to your cluster</p>
+
+    <div class='pre p1 fill-light mt0'>applyResource(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?
+            = <code>{}</code>)</code>
+	    Options object for the apply-resource function
+
+          </div>
+          
+          <table class='mt1 mb2 fixed-table h5 col-12'>
+            <colgroup>
+              <col width='30%' />
+              <col width='70%' />
+            </colgroup>
+            <thead>
+              <tr class='bold fill-light'>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody class='mt1'>
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.projectLocation</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the location(directory) of your projects package.json. Defaults to 
+<code>process.cwd</code>
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.token</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>auth token to pass into the openshift rest client for logging in with the API Server.  Overrides the username/password
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.username</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>username to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.password</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>password to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.apiServer</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>@deprecated - use server instead. apiServer to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.server</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>server to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.insecure</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to pass into the openshift rest client for logging in with a self signed cert.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.forceLogin</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Force a login when using the apiServer login.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.expose</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Set to true to create a default Route and expose the default service.  defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.exposeHost</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Alias/DNS that points to the service. Must be used with expose
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.namespace</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.displayName</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to specify the project namespace display name to build/deploy into.  Overwrites any namespace settings in your OpenShift or Kubernetes configuration files
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.create</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to create the namespace if it does not exist. Only applicable for the build and deploy command. Must be used with namespace.name
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.name</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to specify the project namespace name to build/deploy into.  Overwrites any namespace settings in your OpenShift or Kubernetes configuration files
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.resourceProfile</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Define a subdirectory below .nodeshift/ that indicates where Openshift resources are stored
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.imageTag</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>set the version to use for the ubi8/nodejs-14.  Versions are ubi8/nodejs-14 tags: 
+<a href="https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/nodejs-14">https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/nodejs-14</a>
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.outputImageStream</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the name of the ImageStream to output to.  Defaults to project name from package.json
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.outputImageTag</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>The tag of the ImageStream to output to. Defaults to latest
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.quiet</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>suppress INFO and TRACE lines from output logs
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.deploy</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.deploy.port</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to update the default ports on the resource files. Defaults to 8080
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.deploy.env</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>?</code>
+  </td>
+  <td class='break-word'><span>an array of objects to pass deployment config environment variables.  
+[{name: NAME_PROP, value: VALUE}]
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.build</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.recreate</span> <code class='quiet'>string/boolean?</code>
+  </td>
+  <td class='break-word'><span>flag to recreate a buildConfig or Imagestream. values are "buildConfig", "imageStream", true, false.  Defaults to false
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.forcePull</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to make your BuildConfig always pull a new image from dockerhub or not. Defaults to false
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.definedProperties</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">array</a>?</code>
+  </td>
+  <td class='break-word'><span>Array of objects with the format { key: value }.  Used for template substitution
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.useDeployment</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Flag to deploy the application using a Deployment instead of a DeploymentConfig. Defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.knative</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>EXPERIMENTAL. flag to deploy an application as a Knative Serving Service.  Defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.kube</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Flag to deploy an application to a vanilla kubernetes cluster.  At the moment only Minikube is supported.  Defaults to false
+</span></td>
+</tr>
+
+
+              
+            </tbody>
+          </table>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></code>:
+        Returns a JSON Object
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='undeploy'>
+      undeploy
+    </h3>
+    
+    
+  </div>
+  
+
+  <p>The undeploy function will use the openshift.yaml/openshift.json from the resource function and remove those values from your cluster.</p>
+
+    <div class='pre p1 fill-light mt0'>undeploy(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?
+            = <code>{}</code>)</code>
+	    Options object for the undeploy function
+
+          </div>
+          
+          <table class='mt1 mb2 fixed-table h5 col-12'>
+            <colgroup>
+              <col width='30%' />
+              <col width='70%' />
+            </colgroup>
+            <thead>
+              <tr class='bold fill-light'>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody class='mt1'>
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.projectLocation</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the location(directory) of your projects package.json. Defaults to 
+<code>process.cwd</code>
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.token</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>auth token to pass into the openshift rest client for logging in with the API Server.  Overrides the username/password
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.username</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>username to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.password</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>password to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.apiServer</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>@deprecated - use server instead. apiServer to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.server</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>server to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.insecure</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to pass into the openshift rest client for logging in with a self signed cert.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.forceLogin</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Force a login when using the apiServer login.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.namespace</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.displayName</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to specify the project namespace display name to build/deploy into.  Overwrites any namespace settings in your OpenShift or Kubernetes configuration files
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.remove</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to remove the user created namespace.  Only applicable for the undeploy command.  Must be used with namespace.name
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.name</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to specify the project namespace name to build/deploy into.  Overwrites any namespace settings in your OpenShift or Kubernetes configuration files
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.resourceProfile</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Define a subdirectory below .nodeshift/ that indicates where Openshift resources are stored
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.imageTag</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>set the version to use for the ubi8/nodejs-14.  Versions are ubi8/nodejs-14 tags: 
+<a href="https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/nodejs-14">https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/nodejs-14</a>
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.outputImageStream</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the name of the ImageStream to output to.  Defaults to project name from package.json
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.outputImageTag</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>The tag of the ImageStream to output to. Defaults to latest
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.quiet</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>suppress INFO and TRACE lines from output logs
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.removeAll</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>option to remove builds, buildConfigs and Imagestreams.  Defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.deploy</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.deploy.port</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to update the default ports on the resource files. Defaults to 8080
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.deploy.env</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>?</code>
+  </td>
+  <td class='break-word'><span>an array of objects to pass deployment config environment variables.  
+[{name: NAME_PROP, value: VALUE}]
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.build</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.recreate</span> <code class='quiet'>string/boolean?</code>
+  </td>
+  <td class='break-word'><span>flag to recreate a buildConfig or Imagestream. values are "buildConfig", "imageStream", true, false.  Defaults to false
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.forcePull</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to make your BuildConfig always pull a new image from dockerhub or not. Defaults to false
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.definedProperties</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">array</a>?</code>
+  </td>
+  <td class='break-word'><span>Array of objects with the format { key: value }.  Used for template substitution
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.useDeployment</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Flag to deploy the application using a Deployment instead of a DeploymentConfig. Defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.knative</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>EXPERIMENTAL. flag to deploy an application as a Knative Serving Service.  Defaults to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.kube</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Flag to deploy an application to a vanilla kubernetes cluster.  At the moment only Minikube is supported.  Defaults to false
+</span></td>
+</tr>
+
+
+              
+            </tbody>
+          </table>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></code>:
+        Returns a JSON Object
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='build'>
+      build
+    </h3>
+    
+    
+  </div>
+  
+
+  <p>The build function will archive your code, create a BuildConfig and Imagestream and then upload the archived code to your cluster</p>
+
+    <div class='pre p1 fill-light mt0'>build(options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?
+            = <code>{}</code>)</code>
+	    Options object for the build function
+
+          </div>
+          
+          <table class='mt1 mb2 fixed-table h5 col-12'>
+            <colgroup>
+              <col width='30%' />
+              <col width='70%' />
+            </colgroup>
+            <thead>
+              <tr class='bold fill-light'>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody class='mt1'>
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.projectLocation</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the location(directory) of your projects package.json. Defaults to 
+<code>process.cwd</code>
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.token</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>auth token to pass into the openshift rest client for logging in with the API Server.  Overrides the username/password
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.username</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>username to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.password</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>password to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.apiServer</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>@deprecated - use server instead. apiServer to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.server</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>server to pass into the openshift rest client for logging in with the API Server
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.insecure</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to pass into the openshift rest client for logging in with a self signed cert.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.forceLogin</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>Force a login when using the apiServer login.  Only used with apiServer login.  default to false
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.namespace</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.displayName</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to specify the project namespace display name to build/deploy into.  Overwrites any namespace settings in your OpenShift or Kubernetes configuration files
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.create</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to create the namespace if it does not exist. Only applicable for the build and deploy command. Must be used with namespace.name
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.namespace.name</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to specify the project namespace name to build/deploy into.  Overwrites any namespace settings in your OpenShift or Kubernetes configuration files
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.imageTag</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>set the version to use for the ubi8/nodejs-14.  Versions are ubi8/nodejs-14 tags: 
+<a href="https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/nodejs-14">https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/nodejs-14</a>
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.outputImageStream</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>the name of the ImageStream to output to.  Defaults to project name from package.json
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.outputImageTag</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>The tag of the ImageStream to output to. Defaults to latest
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.quiet</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>suppress INFO and TRACE lines from output logs
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.build</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>?</code>
+  </td>
+  <td class='break-word'><span>-
+</span></td>
+</tr>
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.strategy</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to change the build strategy used.  Values can be Docker or Source.  Defaults to Source
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.recreate</span> <code class='quiet'>string/boolean?</code>
+  </td>
+  <td class='break-word'><span>flag to recreate a buildConfig or Imagestream. values are "buildConfig", "imageStream", true, false.  Defaults to false
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.forcePull</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>flag to make your BuildConfig always pull a new image from dockerhub or not. Defaults to false
+</span></td>
+</tr>
+
+
+  
+    <tr>
+  <td class='break-word'><span class='code bold'>options.build.env</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>?</code>
+  </td>
+  <td class='break-word'><span>an array of objects to pass build config environment variables.  
+[{name: NAME_PROP, value: VALUE}]
+</span></td>
+</tr>
+
+
+  
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.definedProperties</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">array</a>?</code>
+  </td>
+  <td class='break-word'><span>Array of objects with the format { key: value }.  Used for template substitution
+</span></td>
+</tr>
+
+
+              
+                <tr>
+  <td class='break-word'><span class='code bold'>options.kube</span> <code class='quiet'><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>?</code>
+  </td>
+  <td class='break-word'><span>Flag to deploy an application to a vanilla kubernetes cluster.  At the moment only Minikube is supported.  Defaults to false
+</span></td>
+</tr>
+
+
+              
+            </tbody>
+          </table>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>></code>:
+        Returns a JSON Object
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+      </div>
+    </div>
+  <script src='assets/anchor.js'></script>
+  <script src='assets/split.js'></script>
+  <script src='assets/site.js'></script>
+</body>
+</html>
